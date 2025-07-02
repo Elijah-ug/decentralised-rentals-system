@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-contract ImmovableRental{
+import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
+
+    // bool public upkeepNeeded;
     struct Tenant {
         address user;
         uint256 balance;
@@ -42,7 +47,7 @@ contract ImmovableRental{
     uint256 startDate;
     uint256 endDate;
     bool isSigned;
-     bool isReleased;
+    bool isReleased;
      }
      mapping(address => Rental) public rental;
      uint256 public indexedRental;
@@ -51,6 +56,7 @@ contract ImmovableRental{
      event TenantRegistered(address indexed tenant, bool isRegistered);
      event PropertydRegistered(address indexed landlord, address indexed tenant, bool isRegistered);
      event PropertydRequested(address indexed tenant, uint256 propertyId);
+     event RentPaid(address indexed landlord, address indexed tenant, uint256 amount);
      // ========= MODIFIERS ======
      modifier onlyLandlord(){
         require(landlordProfile[msg.sender].user == msg.sender, "Not Landlord");
@@ -65,12 +71,7 @@ contract ImmovableRental{
     //  **** registering landlord ****
      function registerLandLord() external {
         require(!landlordProfile[msg.sender].isRegistered, "Landlord already registered");
-        landlordProfile[msg.sender] = Landlord({
-            user: msg.sender,
-            balance: 0,
-            isRegistered: true,
-            hasProperties: false
-        });
+        landlordProfile[msg.sender] = Landlord( msg.sender, 0, true, false);
      }
      // *** Registering prperties ***
      function registerProperties(string memory _location, uint256 _amount) external onlyLandlord {
@@ -79,32 +80,15 @@ contract ImmovableRental{
         bytes32 propertyKey = keccak256(abi.encodePacked(msg.sender, _location, _amount));
         require(!isPropertyRegistered[propertyKey], "Property Already registered");
 
-        Properties memory newProperty = Properties({
-            propertyId: indexedProperty,
-            landlord: msg.sender,
-            location: _location,
-            rentAmount: _amount,
-            requestedBy: address(0),
-            isOccupied: false,
-            tenantRequest: false,
-            stillOwned: true,
-            isRegistered: true
-        });
-        listedProperties.push(newProperty);
+        listedProperties.push(Properties(indexedProperty++, msg.sender, _location, _amount, address(0), false, false, true, true));
         isPropertyRegistered[propertyKey] = true;
-        indexedProperty ++;
      }
 
     //  *** registering a tenant ****
     function registerTenant() external{
         require(!tenant[msg.sender].isRegistered, "Tenant alredy registered");
         require(!tenant[msg.sender].hasActiveRent, "Tenant Already registered");
-        tenant[msg.sender] = Tenant({
-            user: msg.sender,
-            balance: 0,
-            hasActiveRent: false,
-            isRegistered: true
-        });
+        tenant[msg.sender] = Tenant( msg.sender, 0, false, true );
     }
     //  *** registering a rental ***
     function registerRental(address _tenant) external onlyLandlord {
@@ -112,33 +96,139 @@ contract ImmovableRental{
         require(landlordProfile[msg.sender].isRegistered, "Not a registered Landlord");
         require(tenant[_tenant].isRegistered, "Not a registered tenant");
 
-        rental[msg.sender] = Rental({
-            rentalId: indexedRental,
-            landlord: msg.sender,
-            tenant: _tenant,
-            startDate: 0,
-            endDate: 0,
-            isSigned: false,
-            isReleased: true
-        });
+        rental[msg.sender] = Rental( indexedRental, msg.sender, _tenant, 0, 0, false, true );
         indexedRental ++;
     }
 
     // **** tenants function to request rental *****
     function propertyRentRequest(uint256 _propertyId) external onlyTenant{
         require(_propertyId < listedProperties.length, "Invalid Propert Id");
-        Properties memory property = listedProperties[_propertyId];
+        Properties storage property = listedProperties[_propertyId];
 
         require(!property.isOccupied, "Property already occupied");
         require(!property.tenantRequest, "Already requested");
+        require(tenant[msg.sender].balance >= property.rentAmount, "Insufficient balance to fund rental");
 
         property.tenantRequest = true;
         property.requestedBy = msg.sender;
         emit PropertydRequested(msg.sender, _propertyId);
     }
     // ***** Landlord function to sign rental ****
+    function signRental(uint256 _durtionInDays) external onlyLandlord{
+        Rental storage currentRental = rental[msg.sender];
+        require(!currentRental.isSigned, "Rental Already signed");
+        require(tenant[currentRental.tenant].isRegistered, "Not a registered tenant");
+        // // Mark rental signed and set rental period
+        currentRental.isSigned = true;
+        currentRental.startDate = block.timestamp;
+        currentRental.endDate = block.timestamp + (_durtionInDays * 1 days);
+        currentRental.isReleased = false;
+
+        // mark property as occupied
+        for(uint i = 0; i < listedProperties.length; i++){
+            if(
+                listedProperties[i].landlord == msg.sender &&
+                listedProperties[i].requestedBy == currentRental.tenant &&
+                listedProperties[i].tenantRequest == true
+                ){
+                    listedProperties[i].isOccupied = true;
+                    break;
+                }
+        }
+        tenant[currentRental.tenant].hasActiveRent = true;
+    }
+
+//    function to automate payment
+     function autoRentalPayment() public {
+        for(uint i = 0; i < listedProperties.length; i++){
+            Properties storage properties = listedProperties[i];
+            Rental storage rent = rental[properties.landlord];
+            if(rent.isSigned && !rent.isReleased && rent.startDate > 0
+             && block.timestamp > rent.startDate + 5 minutes && tenant[rent.tenant].balance >= properties.rentAmount){
+                rent.isReleased = true;
+                // transfer the money
+                tenant[rent.tenant].balance -= properties.rentAmount;
+                landlordProfile[properties.landlord].balance += properties.rentAmount;
+            }
+            emit RentPaid(rent.landlord, rent.tenant, properties.rentAmount);
+        }
+
+     }
+    // loops through all rentals (for Automation in batch)
+    function checkAllTimeouts() public{
+        for(uint i = 0; i < listedProperties.length; i++){
+            Properties storage newProperty = listedProperties[i];
+            address newLandlord = newProperty.landlord;
+
+            Rental storage newRental = rental[newLandlord];
+            address newTenant = newRental.tenant;
+            if(newRental.isSigned && !newRental.isReleased && block.timestamp >= newRental.endDate){
+                // reset rental
+                newRental.isReleased = true;
+                newRental.isSigned = false;
+                newRental.tenant = address(0);
+                newRental.startDate = 0;
+                // reset property
+                newProperty.isOccupied = false;
+                newProperty.tenantRequest = false;
+                newProperty.requestedBy = address(0);
+                //reset tenant
+                tenant[newTenant].hasActiveRent = false;
+
+            }
+        }
+    }
+    // tenant deposit function
+    function tenantDeposit() external payable onlyTenant{
+        require(msg.value > 0, "Must send some ETHt");
+        tenant[msg.sender].balance += msg.value;
+    }
+
      // ========== AUTOMATION =========
+     function checkUpkeep(bytes calldata) external view  override returns (bool upkeepNeeded, bytes memory performData) {
+        upkeepNeeded = false;
+        for(uint i = 0; i < listedProperties.length; i++){
+            Properties storage property = listedProperties[i];
+            Rental storage rent = rental[property.landlord];
+
+            // rental expired && not yet released
+            if(rent.isSigned && !rent.isReleased && block.timestamp >= rent.endDate){
+                upkeepNeeded = true;
+                return (true, abi.encode("timeout"));
+            }
+            // rental needs rent payment
+            if(rent.isSigned && !rent.isReleased && tenant[rent.tenant].balance >= property.rentAmount &&
+             block.timestamp > (rent.startDate + 5 minutes)){
+                upkeepNeeded = true;
+                return(true, abi.encode("payment"));
+            }
+        }
+        return (false, bytes(""));
+     }
+     function performUpkeep(bytes calldata performData) external override{
+        if(keccak256(performData) == keccak256(bytes("timeout"))){
+             checkAllTimeouts();
+        } else if(keccak256(performData) == keccak256(bytes("payment"))){
+             autoRentalPayment();
+        }else{
+            revert("Unknown upkeep action");
+        }
+     }
      // ========== VIEW FUNCTIONS ======
+     function returnAllProperties() external view returns(Properties[] memory){
+        return listedProperties;
+     }
+     function returnTenantProfiles() external view returns(Tenant memory){
+        require(tenant[msg.sender].isRegistered, "You are not a registered tenant");
+        return tenant[msg.sender];
+     }
+     function returnLandlordProfile() external view returns (Landlord memory) {
+        require(landlordProfile[msg.sender].isRegistered, "Not a registered landlord");
+          return landlordProfile[msg.sender];
+       }
+       function returnRental() external view returns(Rental memory){
+        return rental[msg.sender];
+       }
      // =========== FALLBACK ========
      receive() external payable{}
 
