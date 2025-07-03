@@ -1,11 +1,16 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: UNLICENCED
 pragma solidity ^0.8.28;
 
 import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
+import {Client} from "@chainlink/contracts-ccip/contracts/libraries/Client.sol";
+import {CCIPReceiver} from '@chainlink/contracts-ccip/contracts/applications/CCIPReceiver.sol';
+import {IRouterClient} from "@chainlink/contracts-ccip/contracts/interfaces/IRouterClient.sol";
 
+contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, ReentrancyGuard{
+
+    IRouterClient public router;
     // bool public upkeepNeeded;
     struct Tenant {
         address user;
@@ -30,8 +35,6 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
         Properties[] public listedProperties;
         mapping(bytes32 => bool) public isPropertyRegistered;
 
-
-
     struct Landlord {
         address user;
         uint256 balance;
@@ -51,13 +54,36 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
      }
      mapping(address => Rental) public rental;
      uint256 public indexedRental;
+    //  incoming payload struct
+    struct CrossChainRentRequest {
+    address tenant;
+    uint256 propertyId;
+    uint256 rentAmount;
+    bool autoRequest;
+    }
+
+    address public owner;
+    mapping(uint64 => mapping(address => bool)) public allowedSenderPerChain;
      // ======== EVENTS =======
      event LandlordRegistered(address indexed landlord, bool isRegistered);
      event TenantRegistered(address indexed tenant, bool isRegistered);
-     event PropertydRegistered(address indexed landlord, address indexed tenant, bool isRegistered);
-     event PropertydRequested(address indexed tenant, uint256 propertyId);
+     event PropertyRegistered(address indexed landlord, bool isRegistered);
+     event PropertyRequested(address indexed tenant, uint256 propertyId);
      event RentPaid(address indexed landlord, address indexed tenant, uint256 amount);
+     event CrossRentReceived(
+        address indexed tenant, uint256 indexed propertyId, uint256 rentAmount, bool autoRequest
+        );
+
+     // constructor
+     constructor(address _router)CCIPReceiver(_router){
+        router = IRouterClient(_router);
+        owner = msg.sender;
+    }
      // ========= MODIFIERS ======
+     modifier onlyOwner(){
+        require(msg.sender == owner, "Not Landlord");
+        _;
+     }
      modifier onlyLandlord(){
         require(landlordProfile[msg.sender].user == msg.sender, "Not Landlord");
         _;
@@ -72,6 +98,7 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
      function registerLandLord() external {
         require(!landlordProfile[msg.sender].isRegistered, "Landlord already registered");
         landlordProfile[msg.sender] = Landlord( msg.sender, 0, true, false);
+        emit LandlordRegistered(msg.sender, true);
      }
      // *** Registering prperties ***
      function registerProperties(string memory _location, uint256 _amount) external onlyLandlord {
@@ -82,6 +109,7 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
 
         listedProperties.push(Properties(indexedProperty++, msg.sender, _location, _amount, address(0), false, false, true, true));
         isPropertyRegistered[propertyKey] = true;
+        emit PropertyRegistered(msg.sender, true);
      }
 
     //  *** registering a tenant ****
@@ -89,6 +117,8 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
         require(!tenant[msg.sender].isRegistered, "Tenant alredy registered");
         require(!tenant[msg.sender].hasActiveRent, "Tenant Already registered");
         tenant[msg.sender] = Tenant( msg.sender, 0, false, true );
+
+        emit TenantRegistered(msg.sender, true);
     }
     //  *** registering a rental ***
     function registerRental(address _tenant) external onlyLandlord {
@@ -111,11 +141,10 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
 
         property.tenantRequest = true;
         property.requestedBy = msg.sender;
-        emit PropertydRequested(msg.sender, _propertyId);
+        emit PropertyRequested(msg.sender, _propertyId);
     }
     // ***** Landlord function to sign rental ****
-    function signRental(uint256 _durtionInDays) external onlyLandlord{
-        Rental storage currentRental = rental[msg.sender];
+    function signRental(uint256 _durtionInDays) external onlyLandlord{        Rental storage currentRental = rental[msg.sender];
         require(!currentRental.isSigned, "Rental Already signed");
         require(tenant[currentRental.tenant].isRegistered, "Not a registered tenant");
         // // Mark rental signed and set rental period
@@ -139,7 +168,7 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
     }
 
 //    function to automate payment
-     function autoRentalPayment() public {
+     function autoRentalPayment() public nonReentrant {
         for(uint i = 0; i < listedProperties.length; i++){
             Properties storage properties = listedProperties[i];
             Rental storage rent = rental[properties.landlord];
@@ -178,10 +207,26 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
             }
         }
     }
-    // tenant deposit function
-    function tenantDeposit() external payable onlyTenant{
+    // ====== tenant deposit function ========
+    function tenantDeposit() external payable onlyTenant nonReentrant{
         require(msg.value > 0, "Must send some ETHt");
         tenant[msg.sender].balance += msg.value;
+    }
+    // ========== withdraw ========
+    function userWithdraw(uint256 _amount) external nonReentrant{
+        require(_amount > 0, "Invalid input amount");
+
+        if(tenant[msg.sender].isRegistered){
+            require(tenant[msg.sender].balance >= _amount, "You have insufficient funds ");
+            tenant[msg.sender].balance -= _amount;
+        }else if(landlordProfile[msg.sender].isRegistered){
+            require(landlordProfile[msg.sender].balance >= _amount, "You have insufficient funds");
+            landlordProfile[msg.sender].balance -= _amount;
+        }else{
+            revert("Not registered on this platform");
+        }
+        (bool success, ) = msg.sender.call{value: _amount}("");
+        require(success, "Withdraw failed");
     }
 
      // ========== AUTOMATION =========
@@ -229,7 +274,36 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
        function returnRental() external view returns(Rental memory){
         return rental[msg.sender];
        }
-     // =========== FALLBACK ========
+       // setting the sender
+       function setSender(uint64 _chainSelector, address _sender, bool allowed) external onlyOwner {
+            allowedSenderPerChain[_chainSelector][_sender] = allowed;
+         }
+
+    //    handling payments from across chain
+    function _ccipReceive(Client.Any2EVMMessage memory message) internal override {
+       CrossChainRentRequest memory rent = abi.decode(message.data, (CrossChainRentRequest));
+       require(allowedSenderPerChain[message.sourceChainSelector][abi.decode(message.sender,
+        (address))], "Unauthorized sender");
+
+    require(listedProperties[rent.propertyId].landlord != address(0), "Invalid property");
+
+    // Credit balance
+    tenant[rent.tenant].balance += rent.rentAmount;
+
+    // Auto-request logic
+    if (rent.autoRequest) {
+        Properties storage property = listedProperties[rent.propertyId];
+        require(!property.isOccupied, "Already occupied");
+        require(property.requestedBy == address(0), "Already requested");
+
+        property.requestedBy = rent.tenant;
+        property.tenantRequest = true;
+    }
+
+    emit CrossRentReceived(rent.tenant, rent.propertyId, rent.rentAmount, rent.autoRequest);
+}
+
+     // =========== Enable the contract to receive native ETH ========
      receive() external payable{}
 
 }
