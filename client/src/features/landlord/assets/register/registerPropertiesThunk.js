@@ -7,7 +7,7 @@ export const fetchRegisterProperties = createAsyncThunk(
     async ({location, name, amount}, { rejectWithValue }) => {
         try {
             const contract = await getReceiverContract();
-            const property = contract.registerProperties(location, name, amount);
+            const property = await contract.registerProperties(location, name, amount);
             await property.wait();
             toast.success("Property registered successfully");
             return true;

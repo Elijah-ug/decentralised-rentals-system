@@ -21,7 +21,7 @@ export default function PropertiesForm() {
     try {
       const parsedAmount = parseEther(amount);
       dispatch(fetchRegisterProperties({ location, name, amount: parsedAmount }));
-      console.log(amount);
+      console.log(typeof(parsedAmount));
       setAmount("");
       setLocation("");
       setName("");

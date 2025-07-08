@@ -12,7 +12,7 @@ export default function LandlordDashboard() {
   const dispatch = useDispatch();
   useEffect(() => {
     dispatch(fetchLandlordProfile());
-    dispatch(autoConnectWallet())
+    dispatch(autoConnectWallet());
     console.log(profile)
   }, [address])
   console.log(profile)
@@ -43,7 +43,7 @@ export default function LandlordDashboard() {
            {/* property ownership */}
            <div >
             <span className="text-violet-400 pr-2">Owns Property(ies):</span>
-            <span className="text-lg font-bold">{profile.hasProperties? ("✅") : ("No Property")}</span>
+            <span className="text-lg font-bold">{profile?.hasProperties? ("✅") : ("No Property")}</span>
           </div>
           {/* Num of properties */}
           <div >

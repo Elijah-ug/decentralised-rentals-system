@@ -9,6 +9,7 @@ import TenantDeposit from "./frontend/tenant-components/TenantDeposit";
 import Withdraw from "./frontend/public/Withdraw";
 import Registeration from "./frontend/pages/Registeration";
 import PropertiesForm from "./frontend/landlord-components/PropertiesForm";
+import { ToastContainer } from "react-toastify";
 export default function App() {
   return (
     <div>
@@ -27,6 +28,17 @@ export default function App() {
         <Route path="forms" element={<PropertiesForm />} />
         <Route path="trending-properties" element={<TrendingProperties/>} />
       </Routes>
+
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        pauseOnHover
+        draggable
+        theme="colored"
+      />
     </div>
   )
 }

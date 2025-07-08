@@ -3,7 +3,7 @@
 
 @custom-variant dark (&:is(.dark *));
 body{
-    background-color: #2e2d2d;
+    background-color: #222121;
     color: #fff;
 }
 .active{

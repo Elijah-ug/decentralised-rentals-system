@@ -115,6 +115,7 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
 
         listedProperties.push(Properties(indexedProperty++, msg.sender, _location, _name, _amount, address(0), false, false, true));
         isPropertyRegistered[propertyKey] = true;
+        landlordProfile[msg.sender].hasProperties = true;
         emit PropertyRegistered(msg.sender, true);
      }
 
