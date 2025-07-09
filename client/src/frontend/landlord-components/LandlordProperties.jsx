@@ -4,37 +4,33 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux"
 import { toast } from "react-toastify";
 import { fetchPropertyRentRequest } from "@/features/tenant/request/rentRequestThunk";
+import { Link } from "react-router-dom";
+import { MdArrowBack } from "react-icons/md";
+import Receipts from "../public/Receipts";
 
-export const TrendingProperties = () => {
+export const LandlordProperties = () => {
   const { properties } = useSelector((state) => state.allProperties);
   const { tenantProf } = useSelector((state) => state.tenant);
+  const { address } = useSelector((state) => state.wallet);
+
   const dispatch = useDispatch()
   useEffect(() => {
     dispatch(fetchReturnAllProperties());
-    console.log(properties);
+    console.log(address);
   }, [])
 
-  const handleSendRentRequest = (propertyId) => {
-    const parsedProp = propertyId.toString();
-    console.log(typeof (propertyId))
-    console.log(typeof(parsedProp))
-
-    if (!tenantProf.isRegistered) {
-      toast.error("You're not a registered tenant");
-    } else if (properties.tenantRequest) {
-      toast.error("Property has been booked");
-    } else {
-      dispatch(fetchPropertyRentRequest({propertyId}))
-      console.log("Request sent to the contract");
-    }
-  }
+  const isOwner = properties.some(
+    (property) => property?.landlord?.toLowerCase() == address?.toLowerCase());
+  console.log("isOwner: ", address)
 
   return (
     <div>
       <div className="my-4 mx-10">
-         <div className="grid grid-cols-3 gap-4">
-          {properties?.map((property, index) => (
-          <div key={index} className="bg-gray-500 rounded-2xl shadow-md p-4 hover:shadow-lg transition-all">
+        <div className="flex justify-center gap-8">
+         <div className="w-1/3">
+            { isOwner?
+              (properties?.map((property, index) => (
+          <div key={index} className="bg-gray-500 relative rounded-2xl shadow-md p-4 hover:shadow-lg transition-all">
             <h2 className="text-lg font-semibold mb-2">Property #{property?.propertyId}</h2>
               <p className="flex gap-2">
                 <strong>Landlord:</strong>
@@ -56,13 +52,30 @@ export const TrendingProperties = () => {
                 <span>{property?.requestedBy.slice(0, 7)}...{property?.requestedBy.slice(-5)}</span>
                 </p>)
               }
-              <Button onClick={() => handleSendRentRequest(property.propertyId)}
-                type="submit" className="w-1/2 mt-3">
-                Send Rent Request
-              </Button>
+              <div>
+              <Link to="/forms"
+                  className="font-bold absolute text-green-400 underline right-1/10 top-1/2" >
+                  Sign the receipt
+            </Link>
+              </div>
       </div>
-    ))}
-  </div>
+          ))): <h3 className="text-xl">You have no properties yet</h3> }
+
+          </div>
+          {/* receipt */}
+          <div className="">
+            {isOwner && (<Receipts />)}
+          </div>
+
+          </div>
+        {/* link to properties */}
+        <div className="p-2 absolute left-20 bottom-20">
+          <Link to="/landlord-dashboard"
+                  className="font-bold flex items-center gap-1" >
+                  <MdArrowBack size={20} />
+                  <span>back</span>
+            </Link>
+          </div>
 </div>
     </div>
   )

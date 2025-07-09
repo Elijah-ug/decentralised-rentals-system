@@ -13,7 +13,7 @@ export default function ConnectWallet() {
         {!address ? (
           <Button onClick={dispatch(connectWallet())}
           className="bg-green-400 w-26 hover:bg-green-300 cursor-pointer"
-        >Button</Button>) :
+        >Connect Wallet</Button>) :
           <span className="bg-blue-500 py-1 px-3 rounded">
             {address.slice(0, 7)}...{address.slice(-5)}</span>
         }

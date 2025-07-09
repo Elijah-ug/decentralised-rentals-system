@@ -18,7 +18,7 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
         bool hasActiveRent;
         bool isRegistered;
     }
-    mapping(address => Tenant) public tenant;
+    mapping(address => Tenant) public tenants;
 // property struct
     struct Properties{
             uint256 propertyId;
@@ -53,9 +53,10 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
     uint256 endDate;
     bool isSigned;
     bool isReleased;
+    bool isPaid;
 }
 
-     mapping(address => TenantsReceipt) public landlordRentalReceipt;
+     mapping(uint256 => TenantsReceipt) public rentalReceipts; // propertyId => receipt
 
      uint256 public indexedRental;
     //  incoming payload struct
@@ -95,8 +96,8 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
         _;
      }
      modifier onlyTenant(){
-        require(tenant[msg.sender].user == msg.sender, "Unregistered tenant");
-        require(tenant[msg.sender].isRegistered, "Tenant Unregistered");
+        require(tenants[msg.sender].user == msg.sender, "Unregistered tenant");
+        require(tenants[msg.sender].isRegistered, "Tenant Unregistered");
         _;
      }
      // ========== LOGICAL FUNCTIONS ======
@@ -121,9 +122,9 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
 
     //  *** registering a tenant ****
     function registerTenant() external{
-        require(!tenant[msg.sender].isRegistered, "Tenant registered");
-        require(!tenant[msg.sender].hasActiveRent, "Tenant registered");
-        tenant[msg.sender] = Tenant( msg.sender, 0, false, true );
+        require(!tenants[msg.sender].isRegistered, "Tenant registered");
+        require(!tenants[msg.sender].hasActiveRent, "Tenant registered");
+        tenants[msg.sender] = Tenant( msg.sender, 0, false, true );
 
         emit TenantRegistered(msg.sender, true);
     }
@@ -135,7 +136,7 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
 
         require(!property.isOccupied, "Property occupied");
         require(!property.tenantRequest, "Taken");
-        require(tenant[msg.sender].balance >= property.rentAmount, "Insufficient Funds");
+        require(tenants[msg.sender].balance >= property.rentAmount, "Insufficient Funds");
 
         property.tenantRequest = true;
         property.requestedBy = msg.sender;
@@ -158,9 +159,9 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
         ) {
             address tenantAddr = property.requestedBy;
 
-            require(tenant[tenantAddr].isRegistered, "Tenant Unregistered");
+            require(tenants[tenantAddr].isRegistered, "Tenant Unregistered");
 
-            landlordRentalReceipt[msg.sender] = TenantsReceipt({
+            rentalReceipts[property.propertyId] = TenantsReceipt({
                 rentalId: indexedRental++,
                 landlord: msg.sender,
                 tenant: tenantAddr,
@@ -169,12 +170,13 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
                 startDate: block.timestamp,
                 endDate: block.timestamp + (_durationInDays * 1 days),
                 isSigned: true,
-                isReleased: false
+                isReleased: false,
+                isPaid: false
             });
 
             // Mark property & tenant state
             property.isOccupied = true;
-            tenant[tenantAddr].hasActiveRent = true;
+            tenants[tenantAddr].hasActiveRent = true;
 
             emit RentalSigned(msg.sender, tenantAddr, indexedRental - 1);
 
@@ -184,8 +186,6 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
     }
 
     require(rentalCreated, "No valid property request found");
-
-
 }
 
 
@@ -193,13 +193,17 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
      function autoRentalPayment() public nonReentrant {
         for(uint i = 0; i < listedProperties.length; i++){
             Properties storage properties = listedProperties[i];
-            TenantsReceipt storage rent = landlordRentalReceipt[properties.landlord];
+            TenantsReceipt storage rent = rentalReceipts[properties.propertyId];
+
+
             if(rent.isSigned && !rent.isReleased && rent.startDate > 0
-             && block.timestamp > rent.startDate + 5 minutes && tenant[rent.tenant].balance >= properties.rentAmount){
+             && block.timestamp > rent.startDate + 5 minutes &&
+              tenants[rent.tenant].balance >= properties.rentAmount){
                 rent.isReleased = true;
                 // transfer the money
-                tenant[rent.tenant].balance -= properties.rentAmount;
+                tenants[rent.tenant].balance -= properties.rentAmount;
                 landlordProfile[properties.landlord].balance += properties.rentAmount;
+                rent.isPaid = true;
             }
             emit RentPaid(rent.landlord, rent.tenant, properties.rentAmount);
         }
@@ -209,9 +213,8 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
     function checkAllTimeouts() public{
         for(uint i = 0; i < listedProperties.length; i++){
             Properties storage newProperty = listedProperties[i];
-            address newLandlord = newProperty.landlord;
 
-            TenantsReceipt storage newRental = landlordRentalReceipt[newLandlord];
+            TenantsReceipt storage newRental = rentalReceipts[newProperty.propertyId];
             address newTenant = newRental.tenant;
             if(newRental.isSigned && !newRental.isReleased && block.timestamp >= newRental.endDate){
                 // reset rental
@@ -224,7 +227,7 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
                 newProperty.tenantRequest = false;
                 newProperty.requestedBy = address(0);
                 //reset tenant
-                tenant[newTenant].hasActiveRent = false;
+                tenants[newTenant].hasActiveRent = false;
 
             }
         }
@@ -232,15 +235,15 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
     // ====== tenant deposit function ========
     function tenantDeposit() external payable onlyTenant nonReentrant{
         require(msg.value > 0, "Invalid Input");
-        tenant[msg.sender].balance += msg.value;
+        tenants[msg.sender].balance += msg.value;
     }
     // ========== withdraw ========
     function userWithdraw(uint256 _amount) external nonReentrant{
         require(_amount > 0, "Invalid amount");
 
-        if(tenant[msg.sender].isRegistered){
-            require(tenant[msg.sender].balance >= _amount, "insufficient funds ");
-            tenant[msg.sender].balance -= _amount;
+        if(tenants[msg.sender].isRegistered){
+            require(tenants[msg.sender].balance >= _amount, "insufficient funds ");
+            tenants[msg.sender].balance -= _amount;
         }else if(landlordProfile[msg.sender].isRegistered){
             require(landlordProfile[msg.sender].balance >= _amount, "insufficient funds");
             landlordProfile[msg.sender].balance -= _amount;
@@ -256,7 +259,7 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
         upkeepNeeded = false;
         for(uint i = 0; i < listedProperties.length; i++){
             Properties storage property = listedProperties[i];
-            TenantsReceipt storage rent = landlordRentalReceipt[property.landlord];
+            TenantsReceipt storage rent = rentalReceipts[property.propertyId];
 
             // rental expired && not yet released
             if(rent.isSigned && !rent.isReleased && block.timestamp >= rent.endDate){
@@ -264,7 +267,7 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
                 return (true, abi.encode("timeout"));
             }
             // rental needs rent payment
-            if(rent.isSigned && !rent.isReleased && tenant[rent.tenant].balance >= property.rentAmount &&
+            if(rent.isSigned && !rent.isReleased && tenants[rent.tenant].balance >= property.rentAmount &&
              block.timestamp > (rent.startDate + 5 minutes)){
                 upkeepNeeded = true;
                 return(true, abi.encode("payment"));
@@ -286,16 +289,22 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
         return listedProperties;
      }
      function returnTenantProfiles() external view returns(Tenant memory){
-        require(tenant[msg.sender].isRegistered, "Unregistered tenant");
-        return tenant[msg.sender];
+        require(tenants[msg.sender].isRegistered, "Unregistered tenant");
+        return tenants[msg.sender];
      }
      function returnLandlordProfile() external view returns (Landlord memory) {
         require(landlordProfile[msg.sender].isRegistered, "Unregistered landlord");
           return landlordProfile[msg.sender];
        }
-       function returnRental() external view returns(TenantsReceipt memory){
-        return landlordRentalReceipt[msg.sender];
-       }
+      function returnRental() external view returns (TenantsReceipt memory) {
+    for (uint i = 0; i < listedProperties.length; i++) {
+        if (rentalReceipts[listedProperties[i].propertyId].tenant == msg.sender) {
+            return rentalReceipts[listedProperties[i].propertyId];
+        }
+    }
+    revert("No active rental found");
+}
+
        // setting the sender
        function setSender(uint64 _chainSelector, address _sender, bool allowed) external onlyOwner {
             allowedSenderPerChain[_chainSelector][_sender] = allowed;
@@ -310,7 +319,7 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
     require(listedProperties[rent.propertyId].landlord != address(0), "Invalid property");
 
     // Credit balance
-    tenant[rent.tenant].balance += rent.rentAmount;
+    tenants[rent.tenant].balance += rent.rentAmount;
 
     // Auto-request logic
     if (rent.autoRequest) {

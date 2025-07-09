@@ -1,16 +1,19 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input'
 import { fetchRegisterProperties } from '@/features/landlord/assets/register/registerPropertiesThunk';
+import { fetchSignReceipt } from '@/features/landlord/assets/rent/sign/signReceiptThunk';
 import { Label } from '@radix-ui/react-label'
-import { parseEther } from 'ethers';
+import { parseEther, parseUnits } from 'ethers';
 import  { useState } from 'react'
+import { MdArrowBack } from 'react-icons/md';
 import { useDispatch } from 'react-redux';
+import { Link } from 'react-router-dom';
 
 export default function PropertiesForm() {
   const [location, setLocation] = useState("");
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
-  const [duration, setDuration] = useState("");
+  const [durationInDays, setDurationInDays] = useState("");
   const dispatch = useDispatch();
 
   const handleRegisterProperty = () => {
@@ -31,11 +34,13 @@ export default function PropertiesForm() {
   }
 
   const handleSignRent = () => {
-    if (!duration || isNaN(duration)) {
-      console.log("invalid duration, not a number");
+    if (!durationInDays || isNaN(durationInDays)) {
+      console.log("invalid durationInDays, not a number");
     }
-    console.log(duration)
-    setDuration("")
+    const toBigNum = parseUnits(durationInDays.toString(), 0)
+    dispatch(fetchSignReceipt({ durationInDays: toBigNum }));
+    console.log(typeof (toBigNum), toBigNum);
+    setDurationInDays("")
   }
   return (
     <div>
@@ -64,15 +69,22 @@ export default function PropertiesForm() {
   {/* Rental Assignment Card */}
         <div className="grid w-full max-w-sm items-center gap-2 p-4 border rounded-lg shadow">
         <h3 className="text-center font-bold text-amber-400">Sign Rent</h3>
-          <Label htmlFor="days">Rent Duration (days)</Label>
-          <Input value={duration} onChange={(e) => setDuration(e.target.value)}
+          <Label htmlFor="days">Rent durationInDays (days)</Label>
+          <Input value={durationInDays} onChange={(e) => setDurationInDays(e.target.value)}
             id="days" type="number" placeholder="30 days" />
 
           <Button onClick={handleSignRent}
             type="submit" className="w-full">Sign Rent
           </Button>
   </div>
-</div>
+      </div>
+      <div className="p-2 absolute left-20 bottom-20">
+          <Link to="/landlord-dashboard"
+                  className="font-bold flex items-center gap-1" >
+                  <MdArrowBack size={20} />
+                  <span>back</span>
+            </Link>
+          </div>
 
     </div>
   )

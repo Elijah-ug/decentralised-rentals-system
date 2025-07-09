@@ -1,10 +1,11 @@
 import { getReceiverContract } from "@/contract/main";
+import { fetchLandlordProfile } from "@/features/landlord/profile/landlordProfileThunk";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { formatEther } from "ethers";
 
 export const fetchReturnAllProperties = createAsyncThunk(
     "allProperties/fetchListedProperties",
-    async (_, { rejectWithValue }) => {
+    async (_, { rejectWithValue, dispatch }) => {
         try {
             const contract = await getReceiverContract();
             const allProperties = await contract.returnAllProperties();
@@ -20,6 +21,7 @@ export const fetchReturnAllProperties = createAsyncThunk(
                 isRegistered: property[8]
             }));
             console.log(properties);
+            dispatch(fetchLandlordProfile());
             return properties;
         } catch (error) {
             console.log(error.message);

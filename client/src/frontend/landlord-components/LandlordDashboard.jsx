@@ -5,20 +5,34 @@ import { useDispatch, useSelector } from 'react-redux'
 import { fetchLandlordProfile} from '@/features/landlord/profile/landlordProfileThunk'
 import { autoConnectWallet } from '@/auth/autoConnectWalletThunk'
 import { FaRegRegistered } from 'react-icons/fa'
+import { MdArrowBack } from 'react-icons/md'
+import { IoMdNotificationsOutline } from "react-icons/io";
+import { fetchReturnAllProperties } from '@/features/public/view/propertyThunk'
+
 
 export default function LandlordDashboard() {
   const { profile } = useSelector((state) => state.landlord);
   const { address } = useSelector((state) => state.wallet);
+  const { properties } = useSelector((state) => state.allProperties);
+
   const dispatch = useDispatch();
   useEffect(() => {
     dispatch(fetchLandlordProfile());
     dispatch(autoConnectWallet());
+    dispatch(fetchReturnAllProperties())
     console.log(profile)
   }, [address])
-  console.log(profile)
+  const isRequested = properties.some((property) => property.tenantRequest && !property.isOccupied );
+  console.log(isRequested)
   return (
-    <div className="mx-10 my-4">
-      <h3 className="text-lg font-bold text-center mb-6">Registered Landlord's Dashboard</h3>
+    <div className="mx-10 my-4 relative">
+      <h3 className="text-lg font-bold  text-center mb-6">Registered Landlord's Dashboard</h3>
+      <div className=" flex items-center justify-end mb-1 relative">
+        <IoMdNotificationsOutline size={20} />
+        { isRequested && <span
+          className="w-2.5 h-2.5 inline-block text-center text-sm absolute bottom-2 right-3 rounded-full bg-green-400 content-none"
+        ></span>}
+      </div>
       <hr className="my-2" />
       <div className="flex justify-center gap-12">
 
@@ -50,19 +64,33 @@ export default function LandlordDashboard() {
             <span className="text-violet-400 pr-2">Number of Properties:</span>
             <span className="text-lg font-bold">{}</span>
           </div>
-
+          {isRequested && (<p className="mt-5 text-green-400">NOTE: You have new a request</p>)}
         </div>
-        <div className="border-l-2 border-gray-400 h-62"></div>
+        <div className="border-l-2 border-gray-400 h-62"> </div>
         <div className="flex gap-4">
          <Withdraw />
         </div>
       </div>
-
+      <div className="flex flex-col gap-4">
        <Link to="/forms"
             className="font-bold text-amber-400 flex items-center gap-1" >
             <span>Registere Property</span>
             <FaRegRegistered className="text-white" />
-       </Link>
+      </Link>
+      <Link to="/forms"
+            className="font-bold text-amber-400 flex items-center gap-1" >
+            <span>Sign Receipt</span>
+            <FaRegRegistered className="text-white" />
+        </Link>
+      </div>
+      <div className="p-2 absolute right-20 bottom-4">
+                <Link to="/landlord-properties"
+                        className="font-bold flex items-center gap-1" >
+                        <MdArrowBack size={20} />
+                        <span>Your properties</span>
+                  </Link>
+                </div>
+
     </div>
   )
 }

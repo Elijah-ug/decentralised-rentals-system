@@ -10,6 +10,7 @@ import Withdraw from "./frontend/public/Withdraw";
 import Registeration from "./frontend/pages/Registeration";
 import PropertiesForm from "./frontend/landlord-components/PropertiesForm";
 import { ToastContainer } from "react-toastify";
+import { LandlordProperties } from "./frontend/landlord-components/LandlordProperties";
 export default function App() {
   return (
     <div>
@@ -26,7 +27,8 @@ export default function App() {
         </Route>
         <Route path="register" element={<Registeration />} />
         <Route path="forms" element={<PropertiesForm />} />
-        <Route path="trending-properties" element={<TrendingProperties/>} />
+        <Route path="trending-properties" element={<TrendingProperties />} />
+        <Route path="landlord-properties" element={<LandlordProperties/>} />
       </Routes>
 
       <ToastContainer

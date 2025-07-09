@@ -5,20 +5,27 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchTenantProfile } from '@/features/tenant/profile/tenantProfileThunk'
 import { autoConnectWallet } from '@/auth/autoConnectWalletThunk'
+import { fetchReturnAllProperties } from '@/features/public/view/propertyThunk'
+import Receipts from '../public/Receipts'
 
 export default function TenantDashboard() {
   const dispatch = useDispatch()
   const { tenantProf } = useSelector((state) => state.tenant);
   const { address } = useSelector((state) => state.wallet);
+  const { properties } = useSelector((state) => state.allProperties);
 
   useEffect(() => {
     dispatch(autoConnectWallet());
     dispatch(fetchTenantProfile());
+    dispatch(fetchReturnAllProperties());
   }, [])
-  console.log(address);
-  console.log(tenantProf)
+  const isBidder = properties.some(
+    (property) => property?.requestedBy?.toLowerCase() == address?.toLowerCase());
+  console.log("address: ", isBidder);
+  // console.log(tenantProf)
+
   return (
-    <div className="mt-4">
+    <div className="mt-2">
       {/* tenant profiles */}
       <div className="tenant-profiles">
         <h2 className="text-semibold text-center text-2xl mb-2">Registered Tenant's Dashboard</h2>
@@ -41,46 +48,13 @@ export default function TenantDashboard() {
             <span className="text-lg font-bold">{tenantProf?.hasActiveRent? "✅" : "No"}</span>
             </div>
           </div>
-          {/* Rental details here */}
 
-          <div className="flex-col gap-2">
-          <h4 className="text-center text-blue-400">Rent Details</h4>
-            {/* rented property */}
-          <div >
-            <span className="text-amber-400 pr-2">Property:</span>
-            <span className="text-lg font-bold">House</span>
+
+          {/* Rental details here */}
+          <div>
+            {isBidder && (<Receipts/>)}
           </div>
-          {/* address */}
-          <div >
-            <span className="text-amber-400 pr-2">Rent Price:</span>
-            <span className="text-lg font-bold">0.002ETH</span>
-            </div>
-            {/* rntal payment status */}
-          <div >
-            <span className="text-amber-400 pr-2">Rental Paid:</span>
-            <span className="text-lg font-bold">✅</span>
-            </div>
-          {/* address */}
-          <div >
-            <span className="text-amber-400 pr-2">Currently Renting:</span>
-            <span className="text-lg font-bold">✅</span>
-            </div>
-            {/* start date */}
-          <div >
-            <span className="text-amber-400 pr-2">Start Date:</span>
-            <span className="text-lg font-bold">08/7/2025</span>
-            </div>
-            {/* end date */}
-          <div >
-            <span className="text-amber-400 pr-2">End Date:</span>
-            <span className="text-lg font-bold">08/8/2025</span>
-            </div>
-            {/* end date */}
-          <div >
-            <span className="text-amber-400 pr-2">Landlord:</span>
-            <span className="text-lg font-bold">0x000...</span>
-            </div>
-            </div>
+
         </div>
       </div>
       <hr />

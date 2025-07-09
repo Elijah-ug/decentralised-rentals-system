@@ -8,17 +8,19 @@ import { fetchTenantDeposit } from "@/features/tenant/deposit/deposittThunk"
 import { parseEther } from "ethers"
 import { useState } from "react"
 import { useDispatch } from "react-redux"
+import { toast } from "react-toastify"
 
 export default function TenantDeposit() {
   const [amount, setAmount] = useState("");
   const dispatch = useDispatch()
 
   const handleTenantDeposit = () => {
-    if (amount < 0 || isNaN(amount)) {
+    if (!amount || Number(amount) < 0 || isNaN(amount)) {
       console.log("Not A Number")
     }
-    const parsedAmount = parseEther(amount.toString())
-    dispatch(fetchTenantDeposit({amount: parsedAmount}))
+    const parsedAmount = parseEther(amount.toString());
+    dispatch(fetchTenantDeposit({ amount: parsedAmount }));
+    console.log(parsedAmount)
   }
   return (
     <Card className="w-full max-w-sm">
@@ -32,12 +34,9 @@ export default function TenantDeposit() {
         <form>
           <div className="flex flex-col gap-6">
             <div className="grid gap-2">
-              <Label value={amount} onChange={(e) => setAmount(e.target.value)} htmlFor="number">Amount</Label>
-              <Input
-                id="number"
-                type="number"
-                placeholder="0.05 ETH"
-                required
+              <Label  htmlFor="number">Amount</Label>
+              <Input value={amount} onChange={(e) => setAmount(e.target.value)}
+                id="number" type="number" placeholder="0.05 ETH" required
               />
             </div>
           </div>
