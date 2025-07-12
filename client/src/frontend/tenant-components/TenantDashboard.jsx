@@ -22,7 +22,7 @@ export default function TenantDashboard() {
   const isBidder = properties.some(
     (property) => property?.requestedBy?.toLowerCase() == address?.toLowerCase());
   console.log("address: ", isBidder);
-  // console.log(tenantProf)
+  console.log(tenantProf)
 
   return (
     <div className="mt-2">

@@ -1,5 +1,6 @@
 import { autoConnectWallet } from '@/auth/autoConnectWalletThunk';
 import { fetchReceiptThunk } from '@/features/public/receipts/receiptThunk';
+import { fetchReturnAllProperties } from '@/features/public/view/propertyThunk';
 import React, { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -10,10 +11,11 @@ export default function Receipts() {
     const dispatch = useDispatch()
     useEffect(() => {
         dispatch(autoConnectWallet());
-        dispatch(fetchReceiptThunk());
+      dispatch(fetchReceiptThunk());
+      dispatch(fetchReturnAllProperties());
     }, [])
     console.log("receiptuserReceipt: ", userReceipt);
-    console.log("receiptuserReceipt: ", address);
+    // console.log("receiptuserReceipt: ", address);
 
     // const isBidder = userReceipt?.tenant?.toLowerCase() === address?.toLowerCase();
     // const isLandlord = userReceipt?.landlord?.toLowerCase() === address?.toLowerCase();
@@ -39,10 +41,10 @@ export default function Receipts() {
                     </span>
               </div>
 
-                  {/* <div >
+                  <div >
                     <span className="text-amber-400 pr-2 font-bold">Property:</span>
-                    <span className=" text-sm">{userReceipt.name}</span>
-              </div> */}
+                    <span className=" text-sm">{userReceipt.isReleased? "N" : "Y"}</span>
+              </div>
               <div>
                     <span className="text-amber-400 pr-2 font-bold">PropertyId:</span>
                   <span className=" text-sm">
@@ -56,7 +58,7 @@ export default function Receipts() {
                     {/* rntal payment status */}
                   <div >
                     <span className="text-amber-400 pr-2 font-bold">Rental Paid:</span>
-                    <span className="text-sm"> Unpaid</span>
+                    <span className="text-sm"> {userReceipt.isPaid? "Unpaid" : "✅"}</span>
                     </div>
 
                     {/* start date */}

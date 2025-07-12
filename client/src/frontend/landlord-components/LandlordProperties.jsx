@@ -7,6 +7,7 @@ import { fetchPropertyRentRequest } from "@/features/tenant/request/rentRequestT
 import { Link } from "react-router-dom";
 import { MdArrowBack } from "react-icons/md";
 import Receipts from "../public/Receipts";
+import { autoConnectWallet } from "@/auth/autoConnectWalletThunk";
 
 export const LandlordProperties = () => {
   const { properties } = useSelector((state) => state.allProperties);
@@ -15,12 +16,13 @@ export const LandlordProperties = () => {
 
   const dispatch = useDispatch()
   useEffect(() => {
+    dispatch(autoConnectWallet())
     dispatch(fetchReturnAllProperties());
     console.log(address);
   }, [])
 
   const isOwner = properties.some(
-    (property) => property?.landlord?.toLowerCase() == address?.toLowerCase());
+    (property) => property?.landlord?.toLowerCase() === address?.toLowerCase());
   console.log("isOwner: ", address)
 
   return (

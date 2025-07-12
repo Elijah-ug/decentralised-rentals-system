@@ -2,9 +2,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input'
 import { fetchRegisterProperties } from '@/features/landlord/assets/register/registerPropertiesThunk';
 import { fetchSignReceipt } from '@/features/landlord/assets/rent/sign/signReceiptThunk';
+import { fetchLandlordProfile } from '@/features/landlord/profile/landlordProfileThunk';
+import { fetchTenantProfile } from '@/features/tenant/profile/tenantProfileThunk';
 import { Label } from '@radix-ui/react-label'
 import { parseEther, parseUnits } from 'ethers';
-import  { useState } from 'react'
+import  { useEffect, useState } from 'react'
 import { MdArrowBack } from 'react-icons/md';
 import { useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
@@ -16,6 +18,10 @@ export default function PropertiesForm() {
   const [durationInDays, setDurationInDays] = useState("");
   const dispatch = useDispatch();
 
+  useEffect(() => {
+    dispatch(fetchLandlordProfile());
+    dispatch(fetchTenantProfile());
+  },[])
   const handleRegisterProperty = () => {
     if (!amount || isNaN(amount)) {
       console.log("Invalid Amount");

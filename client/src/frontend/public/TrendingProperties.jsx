@@ -33,7 +33,8 @@ export const TrendingProperties = () => {
     <div>
       <div className="my-4 mx-10">
          <div className="grid grid-cols-3 gap-4">
-          {properties?.map((property, index) => (
+          {
+            properties?.map((property, index) => (
           <div key={index} className="bg-gray-500 rounded-2xl shadow-md p-4 hover:shadow-lg transition-all">
             <h2 className="text-lg font-semibold mb-2">Property #{property?.propertyId}</h2>
               <p className="flex gap-2">
@@ -60,9 +61,12 @@ export const TrendingProperties = () => {
                 type="submit" className="w-1/2 mt-3">
                 Send Rent Request
               </Button>
-      </div>
-    ))}
-  </div>
+              </div>
+            ))
+            }
+        </div>
+        {properties.length === 0 && (<div
+          className="text-2xl flex items-center justify-center">No properties in the system yet!</div>)}
 </div>
     </div>
   )

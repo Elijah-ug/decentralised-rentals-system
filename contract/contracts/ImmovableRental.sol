@@ -4,13 +4,12 @@ pragma solidity ^0.8.28;
 import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import {Client} from "@chainlink/contracts-ccip/contracts/libraries/Client.sol";
-import {CCIPReceiver} from '@chainlink/contracts-ccip/contracts/applications/CCIPReceiver.sol';
+// import {Client} from "@chainlink/contracts-ccip/contracts/libraries/Client.sol";
+// import {CCIPReceiver} from '@chainlink/contracts-ccip/contracts/applications/CCIPReceiver.sol';
 import {IRouterClient} from "@chainlink/contracts-ccip/contracts/interfaces/IRouterClient.sol";
 
-contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, ReentrancyGuard{
+contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
 
-    IRouterClient public router;
     // bool public upkeepNeeded;
     struct Tenant {
         address user;
@@ -60,12 +59,6 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
 
      uint256 public indexedRental;
     //  incoming payload struct
-    struct CrossChainRentRequest {
-    address tenant;
-    uint256 propertyId;
-    uint256 rentAmount;
-    bool autoRequest;
-    }
 
     address public owner;
     mapping(uint64 => mapping(address => bool)) public allowedSenderPerChain;
@@ -76,14 +69,10 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
      event PropertyRequested(address indexed tenant, uint256 propertyId);
      event RentPaid(address indexed landlord, address indexed tenant, uint256 amount);
      event RentalSigned(address indexed landlord, address indexed tenant, uint256 rentalId);
-
-     event CrossRentReceived(
-        address indexed tenant, uint256 indexed propertyId, uint256 rentAmount, bool autoRequest
-        );
+     event Withdrawn(address indexed user, uint256 amount);
 
      // constructor
-     constructor(address _router)CCIPReceiver(_router){
-        router = IRouterClient(_router);
+     constructor(){
         owner = msg.sender;
     }
      // ========= MODIFIERS ======
@@ -197,15 +186,16 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
 
 
             if(rent.isSigned && !rent.isReleased && rent.startDate > 0
-             && block.timestamp > rent.startDate + 5 minutes &&
+             && block.timestamp > rent.startDate && rent.endDate > rent.startDate &&
               tenants[rent.tenant].balance >= properties.rentAmount){
                 rent.isReleased = true;
                 // transfer the money
                 tenants[rent.tenant].balance -= properties.rentAmount;
-                landlordProfile[properties.landlord].balance += properties.rentAmount;
+                landlordProfile[rent.landlord].balance += properties.rentAmount;
                 rent.isPaid = true;
+                emit RentPaid(rent.landlord, rent.tenant, properties.rentAmount);
             }
-            emit RentPaid(rent.landlord, rent.tenant, properties.rentAmount);
+
         }
 
      }
@@ -222,6 +212,8 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
                 newRental.isSigned = false;
                 newRental.tenant = address(0);
                 newRental.startDate = 0;
+                newRental.endDate = 0;
+
                 // reset property
                 newProperty.isOccupied = false;
                 newProperty.tenantRequest = false;
@@ -252,6 +244,7 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
         }
         (bool success, ) = msg.sender.call{value: _amount}("");
         require(success, "Withdraw failed");
+        emit Withdrawn(msg.sender, _amount);
     }
 
      // ========== AUTOMATION =========
@@ -268,7 +261,7 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
             }
             // rental needs rent payment
             if(rent.isSigned && !rent.isReleased && tenants[rent.tenant].balance >= property.rentAmount &&
-             block.timestamp > (rent.startDate + 5 minutes)){
+             block.timestamp > (rent.startDate )){
                 upkeepNeeded = true;
                 return(true, abi.encode("payment"));
             }
@@ -298,42 +291,15 @@ contract ImmovableRental is AutomationCompatibleInterface, CCIPReceiver, Reentra
        }
       function returnRental() external view returns (TenantsReceipt memory) {
     for (uint i = 0; i < listedProperties.length; i++) {
-        if (rentalReceipts[listedProperties[i].propertyId].tenant == msg.sender) {
+        if (
+            rentalReceipts[listedProperties[i].propertyId].tenant == msg.sender ||
+            rentalReceipts[listedProperties[i].propertyId].landlord == msg.sender
+            ) {
             return rentalReceipts[listedProperties[i].propertyId];
         }
     }
     revert("No active rental found");
 }
-
-       // setting the sender
-       function setSender(uint64 _chainSelector, address _sender, bool allowed) external onlyOwner {
-            allowedSenderPerChain[_chainSelector][_sender] = allowed;
-         }
-
-    //    handling payments from across chain
-    function _ccipReceive(Client.Any2EVMMessage memory message) internal override {
-       CrossChainRentRequest memory rent = abi.decode(message.data, (CrossChainRentRequest));
-       require(allowedSenderPerChain[message.sourceChainSelector][abi.decode(message.sender,
-        (address))], "Unauthorized sender");
-
-    require(listedProperties[rent.propertyId].landlord != address(0), "Invalid property");
-
-    // Credit balance
-    tenants[rent.tenant].balance += rent.rentAmount;
-
-    // Auto-request logic
-    if (rent.autoRequest) {
-        Properties storage property = listedProperties[rent.propertyId];
-        require(!property.isOccupied, "Already occupied");
-        require(property.requestedBy == address(0), "Already requested");
-
-        property.requestedBy = rent.tenant;
-        property.tenantRequest = true;
-    }
-
-    emit CrossRentReceived(rent.tenant, rent.propertyId, rent.rentAmount, rent.autoRequest);
-}
-
      // =========== Enable the contract to receive native ETH ========
      receive() external payable{}
 
