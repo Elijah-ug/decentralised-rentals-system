@@ -15,7 +15,7 @@ export default function TenantDashboard() {
   const { properties } = useSelector((state) => state.allProperties);
 
   useEffect(() => {
-    dispatch(autoConnectWallet());
+    // dispatch(autoConnectWallet());
     dispatch(fetchTenantProfile());
     dispatch(fetchReturnAllProperties());
   }, [])

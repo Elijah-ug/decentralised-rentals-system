@@ -5,8 +5,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { fetchTenantDeposit } from "@/features/tenant/deposit/deposittThunk"
+import { fetchTenantProfile } from "@/features/tenant/profile/tenantProfileThunk"
 import { parseEther } from "ethers"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useDispatch } from "react-redux"
 import { toast } from "react-toastify"
 
@@ -22,6 +23,9 @@ export default function TenantDeposit() {
     dispatch(fetchTenantDeposit({ amount: parsedAmount }));
     console.log(parsedAmount)
   }
+  useEffect(() => {
+    dispatch(fetchTenantProfile())
+  }, [])
   return (
     <Card className="w-full max-w-sm">
       <CardHeader>

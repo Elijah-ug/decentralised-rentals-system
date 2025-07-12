@@ -186,8 +186,8 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
 
 
             if(rent.isSigned && !rent.isReleased && rent.startDate > 0
-             && block.timestamp > rent.startDate && rent.endDate > rent.startDate &&
-              tenants[rent.tenant].balance >= properties.rentAmount){
+             && block.timestamp >= rent.startDate && rent.endDate > rent.startDate &&
+              tenants[rent.tenant].balance >= properties.rentAmount && !rent.isPaid){
                 rent.isReleased = true;
                 // transfer the money
                 tenants[rent.tenant].balance -= properties.rentAmount;
@@ -263,9 +263,9 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
             }
             // rental needs rent payment
             if(rent.isSigned && !rent.isReleased && tenants[rent.tenant].balance >= property.rentAmount &&
-             block.timestamp > rent.startDate ){
+             block.timestamp >= rent.startDate ){
                 // upkeepNeeded = true;
-                return(true, abi.encode(abi.encode(property.propertyId, uint8(2))));
+                return(true, abi.encode(property.propertyId, uint8(2)));
             }
         }
         return (false, bytes(""));

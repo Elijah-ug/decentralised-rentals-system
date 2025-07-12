@@ -11,7 +11,7 @@ export default function Receipts() {
 
     const dispatch = useDispatch()
     useEffect(() => {
-        dispatch(autoConnectWallet());
+        // dispatch(autoConnectWallet());
       dispatch(fetchReceiptThunk());
       dispatch(fetchReturnAllProperties());
     }, [])

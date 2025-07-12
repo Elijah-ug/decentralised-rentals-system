@@ -10,8 +10,8 @@ export const fetchTenantDeposit = createAsyncThunk(
             const contract = await getReceiverContract();
             const deposit = await contract.tenantDeposit({ value: amount });
             await deposit.wait();
-            toast.success("Deposited successfully");
             dispatch(fetchTenantProfile());
+            toast.success("Deposited successfully");
             console.log("deposited");
             return true;
         } catch (error) {

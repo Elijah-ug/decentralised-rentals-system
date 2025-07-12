@@ -16,7 +16,7 @@ export const LandlordProperties = () => {
 
   const dispatch = useDispatch()
   useEffect(() => {
-    dispatch(autoConnectWallet())
+    // dispatch(autoConnectWallet())
     dispatch(fetchReturnAllProperties());
     console.log(address);
   }, [])

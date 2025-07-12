@@ -18,7 +18,7 @@ export default function LandlordDashboard() {
   const dispatch = useDispatch();
   useEffect(() => {
     dispatch(fetchLandlordProfile());
-    dispatch(autoConnectWallet());
+    // dispatch(autoConnectWallet());
     dispatch(fetchReturnAllProperties())
     console.log(profile)
   }, [address])
@@ -64,7 +64,7 @@ export default function LandlordDashboard() {
             <span className="text-violet-400 pr-2">Number of Properties:</span>
             <span className="text-lg font-bold">{}</span>
           </div>
-          {isRequested && (<p className="mt-5 text-green-400">NOTE: You have new a request</p>)}
+          {isRequested && (<p className="mt-5 text-green-400">NOTE: You have a new request</p>)}
         </div>
         <div className="border-l-2 border-gray-400 h-62"> </div>
         <div className="flex gap-4">

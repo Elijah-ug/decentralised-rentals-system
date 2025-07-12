@@ -12,11 +12,10 @@ export const fetchPropertyRentRequest = createAsyncThunk(
             const contract = await getReceiverContract();
             const request = await contract.propertyRentRequest(propertyId);
             await request.wait();
-            toast.success("Request sent")
             dispatch(fetchTenantProfile());
             dispatch(fetchReturnAllProperties());
             dispatch(fetchReceiptThunk())
-            dispatch()
+            toast.success("Request sent")
             return true;
         } catch (error) {
             console.log(error.message);

@@ -11,7 +11,14 @@ import Registeration from "./frontend/pages/Registeration";
 import PropertiesForm from "./frontend/landlord-components/PropertiesForm";
 import { ToastContainer } from "react-toastify";
 import { LandlordProperties } from "./frontend/landlord-components/LandlordProperties";
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { autoConnectWallet } from "./auth/autoConnectWalletThunk";
 export default function App() {
+  const dispatch = useDispatch()
+  useEffect(() => {
+    dispatch(autoConnectWallet());
+  }, [])
   return (
     <div>
       <div className="nav">

@@ -8,24 +8,23 @@ export const fetchReceiptThunk = createAsyncThunk(
             const contract = await getReceiverContract();
             const receipts = await contract.returnRental();
             const userReceipt = {
-                rentalId: receipts[0].toString(),
-                propertyId: receipts[1].toString(),
-                startDate: new Date(Number(receipts[2]) * 1000).toLocaleDateString("en-us", {
+                propertyId: receipts[0].toString(),
+                startDate: new Date(Number(receipts[1]) * 1000).toLocaleDateString("en-us", {
                     year: "numeric",
                     month: "short",
                     day: "numeric"
                 }),
-                endDate: new Date(Number(receipts[3]) * 1000).toLocaleDateString("en-us", {
+                endDate: new Date(Number(receipts[2]) * 1000).toLocaleDateString("en-us", {
                     year: "numeric",
                     month: "short",
                     day: "numeric"
                 }),
-                landlord: receipts[4],
-                tenant: receipts[5],
-                isSigned: receipts[6],
-                isReleased: receipts[7],
-                isPaid: receipts[8],
-                propertyName: receipts[9],
+                landlord: receipts[3],
+                tenant: receipts[4],
+                isSigned: receipts[5],
+                isReleased: receipts[6],
+                isPaid: receipts[7],
+                propertyName: receipts[8],
             }
             console.log(userReceipt);
             return userReceipt;

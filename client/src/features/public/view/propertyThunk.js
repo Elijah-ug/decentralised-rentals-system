@@ -1,5 +1,6 @@
 import { getReceiverContract } from "@/contract/main";
 import { fetchLandlordProfile } from "@/features/landlord/profile/landlordProfileThunk";
+import { fetchTenantProfile } from "@/features/tenant/profile/tenantProfileThunk";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { formatEther } from "ethers";
 
@@ -22,6 +23,7 @@ export const fetchReturnAllProperties = createAsyncThunk(
             }));
             console.log(properties);
             dispatch(fetchLandlordProfile());
+            dispatch(fetchTenantProfile());
             return properties;
         } catch (error) {
             console.log(error.message);
