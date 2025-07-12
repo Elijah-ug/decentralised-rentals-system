@@ -6,7 +6,8 @@ import { useDispatch, useSelector } from 'react-redux';
 
 export default function Receipts() {
     const { address } = useSelector((state) => state.wallet);
-    const { userReceipt } = useSelector((state) => state.receipt);
+  const { userReceipt } = useSelector((state) => state.receipt);
+  const { properties } = useSelector((state) => state.allProperties);
 
     const dispatch = useDispatch()
     useEffect(() => {
@@ -15,8 +16,8 @@ export default function Receipts() {
       dispatch(fetchReturnAllProperties());
     }, [])
     console.log("receiptuserReceipt: ", userReceipt);
-    // console.log("receiptuserReceipt: ", address);
-
+  // console.log("receiptuserReceipt: ", address);
+  // const propId =
     // const isBidder = userReceipt?.tenant?.toLowerCase() === address?.toLowerCase();
     // const isLandlord = userReceipt?.landlord?.toLowerCase() === address?.toLowerCase();
     // console.log("is bidder: ", isBidder)
@@ -58,7 +59,7 @@ export default function Receipts() {
                     {/* rntal payment status */}
                   <div >
                     <span className="text-amber-400 pr-2 font-bold">Rental Paid:</span>
-                    <span className="text-sm"> {userReceipt.isPaid? "Unpaid" : "✅"}</span>
+                    <span className="text-sm"> {userReceipt.isPaid? "✅" : "Unpaid"}</span>
                     </div>
 
                     {/* start date */}

@@ -3,8 +3,8 @@ import { fetchLandlordProfile } from "./landlordProfileThunk";
 
 const initialState = {
     profile: {
-        user: null,
         balance: "0",
+        user: null,
         isRegistered: false,
         hasProperties: false,
     },

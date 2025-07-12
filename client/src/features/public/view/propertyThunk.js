@@ -14,7 +14,7 @@ export const fetchReturnAllProperties = createAsyncThunk(
                 landlord: property[1],
                 location: property[2],
                 name: property[3],
-                rentAmount: formatEther(property[4]),
+                rentAmount: formatEther(property[4].toString()),
                 requestedBy: property[5],
                 isOccupied: property[6],
                 tenantRequest: property[7],

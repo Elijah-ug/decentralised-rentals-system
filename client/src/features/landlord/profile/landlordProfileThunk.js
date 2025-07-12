@@ -11,8 +11,8 @@ export const fetchLandlordProfile = createAsyncThunk(
             const tx = await contract.returnLandlordProfile();
 
             const profile = {
-                user: tx[0],
-                balance: formatEther(tx[1].toString()),
+                balance: formatEther(tx[0].toString()),
+                user: tx[1],
                 isRegistered: tx[2],
                 hasProperties: tx[3]
             }

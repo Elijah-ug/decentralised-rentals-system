@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: UNLICENCED
 pragma solidity ^0.8.28;
 
-import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@chainlink/contracts/src/v0.8/automation/interfaces/AutomationCompatibleInterface.sol";
 
 // import {Client} from "@chainlink/contracts-ccip/contracts/libraries/Client.sol";
 // import {CCIPReceiver} from '@chainlink/contracts-ccip/contracts/applications/CCIPReceiver.sol';
-import {IRouterClient} from "@chainlink/contracts-ccip/contracts/interfaces/IRouterClient.sol";
+// import {IRouterClient} from "@chainlink/contracts-ccip/contracts/interfaces/IRouterClient.sol";
 
 contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
 
     // bool public upkeepNeeded;
     struct Tenant {
-        address user;
         uint256 balance;
+        address user;
         bool hasActiveRent;
         bool isRegistered;
     }
@@ -35,29 +35,30 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
         mapping(bytes32 => bool) public isPropertyRegistered;
 
     struct Landlord {
-        address user;
         uint256 balance;
+        address user;
         bool isRegistered;
         bool hasProperties;
     }
     mapping(address => Landlord) public landlordProfile;
     // TenantsReceipt
     struct TenantsReceipt {
-    uint256 rentalId;
-    address landlord;
-    address tenant;
-    uint256 propertyId; // NEW
-    string propertyName; // NEW
+    uint256 propertyId;
     uint256 startDate;
     uint256 endDate;
+    address landlord;
+    address tenant;
     bool isSigned;
     bool isReleased;
     bool isPaid;
+    string propertyName; // dynamic, sits alone in memory anyway
 }
+
+
 
      mapping(uint256 => TenantsReceipt) public rentalReceipts; // propertyId => receipt
 
-     uint256 public indexedRental;
+    //  uint256 public indexedRental;
     //  incoming payload struct
 
     address public owner;
@@ -93,7 +94,7 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
     //  **** registering landlord ****
      function registerLandLord() external {
         require(!landlordProfile[msg.sender].isRegistered, "Landlord registered");
-        landlordProfile[msg.sender] = Landlord( msg.sender, 0, true, false);
+        landlordProfile[msg.sender] = Landlord( 0, msg.sender, true, false);
         emit LandlordRegistered(msg.sender, true);
      }
      // *** Registering prperties ***
@@ -113,7 +114,7 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
     function registerTenant() external{
         require(!tenants[msg.sender].isRegistered, "Tenant registered");
         require(!tenants[msg.sender].hasActiveRent, "Tenant registered");
-        tenants[msg.sender] = Tenant( msg.sender, 0, false, true );
+        tenants[msg.sender] = Tenant( 0, msg.sender, false, true );
 
         emit TenantRegistered(msg.sender, true);
     }
@@ -151,23 +152,22 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
             require(tenants[tenantAddr].isRegistered, "Tenant Unregistered");
 
             rentalReceipts[property.propertyId] = TenantsReceipt({
-                rentalId: indexedRental++,
+                 propertyId: property.propertyId,
+                 startDate: block.timestamp,
+                 endDate: block.timestamp + (_durationInDays * 1 days),
                 landlord: msg.sender,
                 tenant: tenantAddr,
-                propertyId: property.propertyId,
-                propertyName: property.name,
-                startDate: block.timestamp,
-                endDate: block.timestamp + (_durationInDays * 1 days),
                 isSigned: true,
                 isReleased: false,
-                isPaid: false
+                isPaid: false,
+                propertyName: property.name
             });
 
             // Mark property & tenant state
             property.isOccupied = true;
             tenants[tenantAddr].hasActiveRent = true;
 
-            emit RentalSigned(msg.sender, tenantAddr, indexedRental - 1);
+            emit RentalSigned(msg.sender, tenantAddr, property.propertyId);
 
             rentalCreated = true;
             break;
@@ -200,30 +200,30 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
 
      }
     // loops through all rentals (for Automation in batch)
-    function checkAllTimeouts() public{
-        for(uint i = 0; i < listedProperties.length; i++){
-            Properties storage newProperty = listedProperties[i];
 
-            TenantsReceipt storage newRental = rentalReceipts[newProperty.propertyId];
-            address newTenant = newRental.tenant;
-            if(newRental.isSigned && !newRental.isReleased && block.timestamp >= newRental.endDate){
-                // reset rental
-                newRental.isReleased = true;
-                newRental.isSigned = false;
-                newRental.tenant = address(0);
-                newRental.startDate = 0;
-                newRental.endDate = 0;
+    function resetRental() internal {
+    for(uint256 i = 0; i < listedProperties.length; i++){
+        Properties storage property = listedProperties[i];
+        TenantsReceipt storage rent = rentalReceipts[property.propertyId];
 
-                // reset property
-                newProperty.isOccupied = false;
-                newProperty.tenantRequest = false;
-                newProperty.requestedBy = address(0);
-                //reset tenant
-                tenants[newTenant].hasActiveRent = false;
+         address tenant = rent.tenant;
 
-            }
+         rent.isReleased = true;
+         rent.isSigned = false;
+         rent.tenant = address(0);
+         rent.startDate = 0;
+         rent.endDate = 0;
+
+        property.isOccupied = false;
+        property.tenantRequest = false;
+        property.requestedBy = address(0);
+
+        if(tenant != address(0)){
+            tenants[tenant].hasActiveRent = false;
         }
     }
+}
+
     // ====== tenant deposit function ========
     function tenantDeposit() external payable onlyTenant nonReentrant{
         require(msg.value > 0, "Invalid Input");
@@ -248,7 +248,9 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
     }
 
      // ========== AUTOMATION =========
-     function checkUpkeep(bytes calldata) external view  override returns (bool upkeepNeeded, bytes memory performData) {
+     function checkUpkeep(bytes calldata) external view  override returns (
+        bool upkeepNeeded, bytes memory performData) {
+
         upkeepNeeded = false;
         for(uint i = 0; i < listedProperties.length; i++){
             Properties storage property = listedProperties[i];
@@ -256,22 +258,23 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
 
             // rental expired && not yet released
             if(rent.isSigned && !rent.isReleased && block.timestamp >= rent.endDate){
-                upkeepNeeded = true;
-                return (true, abi.encode("timeout"));
+                // upkeepNeeded = true;
+                return (true, abi.encode(property.propertyId, uint8(1)));
             }
             // rental needs rent payment
             if(rent.isSigned && !rent.isReleased && tenants[rent.tenant].balance >= property.rentAmount &&
-             block.timestamp > (rent.startDate )){
-                upkeepNeeded = true;
-                return(true, abi.encode("payment"));
+             block.timestamp > rent.startDate ){
+                // upkeepNeeded = true;
+                return(true, abi.encode(abi.encode(property.propertyId, uint8(2))));
             }
         }
         return (false, bytes(""));
      }
      function performUpkeep(bytes calldata performData) external override{
-        if(keccak256(performData) == keccak256(bytes("timeout"))){
-             checkAllTimeouts();
-        } else if(keccak256(performData) == keccak256(bytes("payment"))){
+        (, uint8 actionType) = abi.decode(performData, (uint256, uint8));
+        if(actionType == 1){
+             resetRental();
+        } else if(actionType == 2){
              autoRentalPayment();
         }else{
             revert("Unknown upkeep action");

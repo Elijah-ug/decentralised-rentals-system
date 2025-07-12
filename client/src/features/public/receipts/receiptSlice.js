@@ -4,14 +4,15 @@ import { fetchReceiptThunk } from "./receiptThunk";
 const initialState = {
     userReceipt: {
         rentalId: null,
-        landlord: null,
-        tenant: null,
         propertyId: null,
-        propertyName: null,
         startDate: null,
         endDate: null,
+        landlord: null,
+        tenant: null,
         isSigned: false,
-        isReleased: false
+        isReleased: false,
+        isPaid: false,
+        propertyName: null,
     },
     loading: false,
     error: null

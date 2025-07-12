@@ -11,7 +11,7 @@ export const fetchSignReceipt = createAsyncThunk(
             console.log(contract);
             const sign = await contract.signRental(durationInDays);
             await sign.wait();
-            toast("Receipt signed Successfully!");
+            toast.success("Receipt signed Successfully!");
             dispatch(fetchReceiptThunk());
             return true;
         } catch (error) {
