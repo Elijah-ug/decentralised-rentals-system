@@ -5,11 +5,11 @@ import { toast } from "react-toastify";
 
 export const fetchSignReceipt = createAsyncThunk(
     "sign/fetchSignReceipt",
-    async ({durationInDays}, {rejectWithValue, dispatch}) => {
+    async ({propertyId, durationInDays}, {rejectWithValue, dispatch}) => {
         try {
             const contract = await getReceiverContract();
             console.log(contract);
-            const sign = await contract.signRental(durationInDays);
+            const sign = await contract.signRental(propertyId, durationInDays);
             await sign.wait();
             toast.success("Receipt signed Successfully!");
             dispatch(fetchReceiptThunk());

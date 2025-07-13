@@ -13,6 +13,7 @@ export const LandlordProperties = () => {
   const { properties } = useSelector((state) => state.allProperties);
   const { tenantProf } = useSelector((state) => state.tenant);
   const { address } = useSelector((state) => state.wallet);
+  const { userReceipt } = useSelector((state) => state.receipt);
 
   const dispatch = useDispatch()
   useEffect(() => {
@@ -23,16 +24,17 @@ export const LandlordProperties = () => {
 
   const isOwner = properties.some(
     (property) => property?.landlord?.toLowerCase() === address?.toLowerCase());
-  console.log("isOwner: ", address)
+  console.log("userReceipt.propertyId: ", userReceipt.propertyId)
 
   return (
     <div>
       <div className="my-4 mx-10">
-        <div className="flex justify-center gap-8">
-         <div className="w-1/3">
+        <div className="">
+         <div className="grid grid-cols-2 gap-4">
             { isOwner?
               (properties?.map((property, index) => (
-          <div key={index} className="bg-gray-500 relative rounded-2xl shadow-md p-4 hover:shadow-lg transition-all">
+                <div key={index} className="flex justify-center gap-3 my-4 rounded  bg-gray-500 p-4 hover:shadow-lg transition-all">
+          <div  className=" relative   ">
             <h2 className="text-lg font-semibold mb-2">Property #{property?.propertyId}</h2>
               <p className="flex gap-2">
                 <strong>Landlord:</strong>
@@ -56,18 +58,23 @@ export const LandlordProperties = () => {
               }
               <div>
               <Link to="/forms"
-                  className="font-bold absolute text-green-400 underline right-1/10 top-1/2" >
+                  className="font-bold  text-green-400 underline right-1/10 top-1/2" >
                   Sign the receipt
             </Link>
-              </div>
+                    </div>
+                    </div>
+                  {/* receipt */}
+                  {isOwner && property.propertyId === userReceipt.propertyId &&
+                    <div className="w-1 h-100 bg-gray-400"></div>}
+                  <div className="">
+
+            {isOwner && property.propertyId === userReceipt.propertyId && (<Receipts />)}
+          </div>
       </div>
           ))): <h3 className="text-xl">You have no properties yet</h3> }
 
           </div>
-          {/* receipt */}
-          <div className="">
-            {isOwner && (<Receipts />)}
-          </div>
+
 
           </div>
         {/* link to properties */}

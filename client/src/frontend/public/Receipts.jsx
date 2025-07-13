@@ -11,22 +11,20 @@ export default function Receipts() {
 
     const dispatch = useDispatch()
     useEffect(() => {
-        // dispatch(autoConnectWallet());
       dispatch(fetchReceiptThunk());
       dispatch(fetchReturnAllProperties());
     }, [])
-    console.log("receiptuserReceipt: ", userReceipt);
-  // console.log("receiptuserReceipt: ", address);
+    console.log("receiptuserReceipt: ", properties);
+  console.log("receiptuserReceipt: ", userReceipt);
   // const propId =
-    // const isBidder = userReceipt?.tenant?.toLowerCase() === address?.toLowerCase();
-    // const isLandlord = userReceipt?.landlord?.toLowerCase() === address?.toLowerCase();
-    // console.log("is bidder: ", isBidder)
-    // console.log("is bidder: ", isLandlord)
+  const isBidder = properties?.filter((property) => property.requestedBy.toLowerCase() === address.toLowerCase())
+ const price = isBidder.map((pr) => pr.rentAmount)
+
   return (
       <div>
-          <div className="flex flex-col bg-gray-500 p-2 rounded">
+      {userReceipt.isSigned &&(
+        <div className="flex flex-col bg-gray-500 p-2 rounded">
                   <h4 className="text-center text-amber-500 font-bold">RECEIPT</h4>
-              {/* rented userReceipt */}
                 {/* Landlord */}
                               <div >
                     <span className="text-amber-400 pr-2 font-bold">Landlord:</span>
@@ -44,17 +42,17 @@ export default function Receipts() {
 
                   <div >
                     <span className="text-amber-400 pr-2 font-bold">Property:</span>
-                    <span className=" text-sm">{userReceipt.isReleased? "N" : "Y"}</span>
+                    <span className=" text-sm">{userReceipt.isReleased? "released" : "withheld"}</span>
               </div>
               <div>
                     <span className="text-amber-400 pr-2 font-bold">PropertyId:</span>
                   <span className=" text-sm">
-                      {userReceipt?.propertyId ? (Number(userReceipt.propertyId) + 1) : ""}</span>
+                      {userReceipt?.propertyId ? (Number(userReceipt.propertyId)) : "N/A"}</span>
                   </div>
                   {/* address */}
                   <div >
                     <span className="text-amber-400 pr-2 font-bold">Rent Price:</span>
-                    <span className="text-sm">{userReceipt.rentAmount}ETH</span>
+                    <span className="text-sm">{price}ETH</span>
                     </div>
                     {/* rntal payment status */}
                   <div >
@@ -77,7 +75,7 @@ export default function Receipts() {
                     <span className="text-amber-400 pr-2 font-bold">Signed:</span>
                     <span className="text-sm">{userReceipt.isSigned? "✅": "Unsigned"}</span>
               </div>
-              </div>
+              </div>)}
     </div>
   )
 }

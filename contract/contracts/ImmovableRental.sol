@@ -133,57 +133,41 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
         emit PropertyRequested(msg.sender, _propertyId);
     }
     // ***** Landlord function to sign rental ****
-    function signRental(uint256 _durationInDays) external onlyLandlord {
-    require(landlordProfile[msg.sender].isRegistered, "Unregistered Landlord");
+    function signRental(uint256 _propertyId, uint256 _durationInDays) external onlyLandlord {
+    require(_propertyId < listedProperties.length, "Invalid Property ID");
 
-    bool rentalCreated = false;
+    Properties storage property = listedProperties[_propertyId];
+    require(property.landlord == msg.sender, "You are not the landlord of this property");
+    require(property.requestedBy != address(0), "No tenant requested this property");
+    require(property.tenantRequest == true, "No active request");
+    require(!property.isOccupied, "Already occupied");
 
-    for (uint i = 0; i < listedProperties.length; i++) {
-        Properties storage property = listedProperties[i];
+    address tenantAddr = property.requestedBy;
+    require(tenants[tenantAddr].isRegistered, "Tenant not registered");
 
-        if (
-            property.landlord == msg.sender &&
-            property.requestedBy != address(0) &&
-            property.tenantRequest == true &&
-            !property.isOccupied
-        ) {
-            address tenantAddr = property.requestedBy;
+    rentalReceipts[property.propertyId] = TenantsReceipt({
+        propertyId: property.propertyId,
+        startDate: block.timestamp,
+        endDate: block.timestamp + (_durationInDays * 1 days),
+        landlord: msg.sender,
+        tenant: tenantAddr,
+        isSigned: true,
+        isReleased: false,
+        isPaid: false,
+        propertyName: property.name
+    });
 
-            require(tenants[tenantAddr].isRegistered, "Tenant Unregistered");
+    property.isOccupied = true;
+    tenants[tenantAddr].hasActiveRent = true;
 
-            rentalReceipts[property.propertyId] = TenantsReceipt({
-                 propertyId: property.propertyId,
-                 startDate: block.timestamp,
-                 endDate: block.timestamp + (_durationInDays * 1 days),
-                landlord: msg.sender,
-                tenant: tenantAddr,
-                isSigned: true,
-                isReleased: false,
-                isPaid: false,
-                propertyName: property.name
-            });
-
-            // Mark property & tenant state
-            property.isOccupied = true;
-            tenants[tenantAddr].hasActiveRent = true;
-
-            emit RentalSigned(msg.sender, tenantAddr, property.propertyId);
-
-            rentalCreated = true;
-            break;
-        }
-    }
-
-    require(rentalCreated, "No valid property request found");
+    emit RentalSigned(msg.sender, tenantAddr, property.propertyId);
 }
-
 
 //    function to automate payment
      function autoRentalPayment() public nonReentrant {
         for(uint i = 0; i < listedProperties.length; i++){
             Properties storage properties = listedProperties[i];
             TenantsReceipt storage rent = rentalReceipts[properties.propertyId];
-
 
             if(rent.isSigned && !rent.isReleased && rent.startDate > 0
              && block.timestamp >= rent.startDate && rent.endDate > rent.startDate &&

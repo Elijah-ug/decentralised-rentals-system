@@ -16,12 +16,14 @@ export default function PropertiesForm() {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [durationInDays, setDurationInDays] = useState("");
+  const [propertyId, setPropertyId] = useState("");
   const dispatch = useDispatch();
 
   useEffect(() => {
     dispatch(fetchLandlordProfile());
     dispatch(fetchTenantProfile());
-  },[])
+  }, [])
+  // register property
   const handleRegisterProperty = () => {
     if (!amount || isNaN(amount)) {
       console.log("Invalid Amount");
@@ -38,15 +40,21 @@ export default function PropertiesForm() {
       console.log(error.message);
     }
   }
-
+  // sign property
   const handleSignRent = () => {
     if (!durationInDays || isNaN(durationInDays)) {
       console.log("invalid durationInDays, not a number");
     }
-    const toBigNum = parseUnits(durationInDays.toString(), 0)
-    dispatch(fetchSignReceipt({ durationInDays: toBigNum }));
+    if (!propertyId || isNaN(propertyId)) {
+      console.log("invalid property id, not a number");
+    }
+    const toBigNum = parseUnits(durationInDays.toString(), 0);
+    const parsedId = parseUnits(propertyId.toString(), 0);
+    dispatch(fetchSignReceipt({propertyId: parsedId , durationInDays: toBigNum }));
     console.log(typeof (toBigNum), toBigNum);
-    setDurationInDays("")
+    console.log(typeof (parsedId), parsedId);
+    setDurationInDays("");
+    setPropertyId("");
   }
   return (
     <div>
@@ -72,9 +80,13 @@ export default function PropertiesForm() {
           </Button>
   </div>
 
-  {/* Rental Assignment Card */}
+  {/* Rental receipt signature Card */}
         <div className="grid w-full max-w-sm items-center gap-2 p-4 border rounded-lg shadow">
         <h3 className="text-center font-bold text-amber-400">Sign Rent</h3>
+          <Label htmlFor="days">Rent durationInDays (days)</Label>
+          <Input value={propertyId} onChange={(e) => setPropertyId(e.target.value)}
+            id="id" type="number" placeholder="Enter id eg. 1" />
+
           <Label htmlFor="days">Rent durationInDays (days)</Label>
           <Input value={durationInDays} onChange={(e) => setDurationInDays(e.target.value)}
             id="days" type="number" placeholder="30 days" />

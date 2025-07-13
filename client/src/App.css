@@ -2,9 +2,10 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
-body{
+html, body{
     background-color: #222121;
     color: #fff;
+    overflow-x: hidden;
 }
 .active{
     color: #df6060;

@@ -14,13 +14,15 @@ import { LandlordProperties } from "./frontend/landlord-components/LandlordPrope
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { autoConnectWallet } from "./auth/autoConnectWalletThunk";
+import Footer from "./frontend/public/Footer";
 export default function App() {
   const dispatch = useDispatch()
   useEffect(() => {
     dispatch(autoConnectWallet());
   }, [])
   return (
-    <div>
+    <div className="min-h-screen flex flex-col">
+      <main className="flex-grow">
       <div className="nav">
         <NavBar/>
       </div>
@@ -48,6 +50,10 @@ export default function App() {
         draggable
         theme="colored"
       />
+      </main>
+      <div className="footer">
+        <Footer/>
+      </div>
     </div>
   )
 }

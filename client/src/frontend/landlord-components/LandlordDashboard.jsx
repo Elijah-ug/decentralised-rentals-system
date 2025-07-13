@@ -27,12 +27,14 @@ export default function LandlordDashboard() {
   return (
     <div className="mx-10 my-4 relative">
       <h3 className="text-lg font-bold  text-center mb-6">Registered Landlord's Dashboard</h3>
-      <div className=" flex items-center justify-end mb-1 relative">
-        <IoMdNotificationsOutline size={20} />
-        { isRequested && <span
-          className="w-2.5 h-2.5 inline-block text-center text-sm absolute bottom-2 right-3 rounded-full bg-green-400 content-none"
-        ></span>}
-      </div>
+      {isRequested &&
+        (<div className=" flex items-center justify-end mb-1 relative">
+          <IoMdNotificationsOutline size={20} />
+          <span
+            className="w-2.5 h-2.5 inline-block text-center text-sm absolute bottom-2 right-3 rounded-full bg-green-400 content-none"
+          ></span>
+        </div>)
+      }
       <hr className="my-2" />
       <div className="flex justify-center gap-12">
 
