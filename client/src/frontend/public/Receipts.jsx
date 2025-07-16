@@ -23,7 +23,7 @@ export default function Receipts() {
   return (
       <div>
       {userReceipt.isSigned &&(
-        <div className="flex flex-col bg-gray-500 p-2 rounded">
+        <div className="flex flex-col p-2 rounded">
                   <h4 className="text-center text-amber-500 font-bold">RECEIPT</h4>
                 {/* Landlord */}
                               <div >

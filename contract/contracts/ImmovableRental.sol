@@ -122,6 +122,7 @@ contract ImmovableRental is AutomationCompatibleInterface, ReentrancyGuard{
     // **** tenants function to request rental *****
     function propertyRentRequest(uint256 _propertyId) external onlyTenant{
         require(_propertyId < listedProperties.length, "Invalid Propert Id");
+        require(!tenants[msg.sender].hasActiveRent, "As hasActiveRent");
         Properties storage property = listedProperties[_propertyId];
 
         require(!property.isOccupied, "Property occupied");

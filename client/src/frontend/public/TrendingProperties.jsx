@@ -8,6 +8,8 @@ import { fetchPropertyRentRequest } from "@/features/tenant/request/rentRequestT
 export const TrendingProperties = () => {
   const { properties } = useSelector((state) => state.allProperties);
   const { tenantProf } = useSelector((state) => state.tenant);
+  const { userReceipt } = useSelector((state) => state.receipt);
+  const { address } = useSelector((state) => state.wallet);
   const dispatch = useDispatch()
   useEffect(() => {
     dispatch(fetchReturnAllProperties());
@@ -35,7 +37,7 @@ export const TrendingProperties = () => {
          <div className="grid grid-cols-3 gap-4">
           {
             properties?.map((property, index) => (
-          <div key={index} className="bg-gray-500 rounded-2xl shadow-md p-4 hover:shadow-lg transition-all">
+          <div key={index} className="bg-gray-700 rounded-2xl shadow-md p-4 hover:shadow-lg transition-all">
             <h2 className="text-lg font-semibold mb-2">Property #{property?.propertyId}</h2>
               <p className="flex gap-2">
                 <strong>Landlord:</strong>
@@ -45,22 +47,44 @@ export const TrendingProperties = () => {
               <p className="flex gap-2"><strong>Location:</strong> <span>{property?.name}</span></p>
               <p className="flex gap-2"><strong>Location:</strong> <span>{property?.location}</span></p>
             <p className="flex gap-2"><strong>Rent:</strong> <span>{property?.rentAmount} ETH</span> </p>
-            <p className="flex gap-2">
-              <strong>Status:</strong>{" "}
-              <span className={property?.tenantRequest ? "text-red-400" : "text-green-400"}>
-                <span>{property?.tenantRequest ? "Booked" : "Available"}</span>
-              </span>
-              </p>
+            <div className="flex gap-2">
+              {/* <strong>Status:</strong>{" "}
+                  <span
+                    className={userReceipt?.propertyId === property.propertyId && userReceipt.isPaid
+                    ? "text-red-400" : "text-green-400"}>
+                       {property?.tenantRequest ? "Booked" : "Available"}
+              </span> */}
+                  {(() => {
+                          const matchedProperty = userReceipt.propertyId === property.propertyId;
+                           const statusText = matchedProperty
+                            ? userReceipt.isPaid ? "Paid" : "Booked" : property.tenantRequest ? "Booked" : "Available";
+                          const textColor = statusText === "Paid" ? "text-blue-400" :
+                            statusText === "Booked" ? "text-red-400" : "text-green-400";
+                          return <div className="flex gap-2">
+                            <strong>Status:</strong>
+                            <span className={textColor}>{ statusText}</span>
+                          </div>
+                        })()}
+              </div>
               { property.tenantRequest &&(
                 <p className="flex gap-2">
                 <strong >Bidder:</strong>
                 <span>{property?.requestedBy.slice(0, 7)}...{property?.requestedBy.slice(-5)}</span>
                 </p>)
-              }
-              <Button onClick={() => handleSendRentRequest(property.propertyId)}
-                type="submit" className="w-1/2 mt-3">
-                Send Rent Request
-              </Button>
+                }
+                {property?.landlord?.toLowerCase() !== address?.toLowerCase() && (
+                  <Button
+                  onClick={() => handleSendRentRequest(property.propertyId)}
+                    type="submit" className=" mt-3">
+                    {property.tenantRequest? "Property requested": "Request Property"}
+                </Button>)}
+                {/* {(() => {
+                  const currentProperty = userReceipt.propertyId === property.propertyId;
+                  const currentText = currentProperty
+                  ?userReceipt.isPaid? "Paid"
+                })()} */}
+
+
               </div>
             ))
             }

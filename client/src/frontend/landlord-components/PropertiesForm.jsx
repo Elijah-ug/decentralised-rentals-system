@@ -78,32 +78,41 @@ export default function PropertiesForm() {
           <Button onClick={handleRegisterProperty}
             type="submit" className="w-full">Register Property
           </Button>
-  </div>
 
-  {/* Rental receipt signature Card */}
-        <div className="grid w-full max-w-sm items-center gap-2 p-4 border rounded-lg shadow">
-        <h3 className="text-center font-bold text-amber-400">Sign Rent</h3>
-          <Label htmlFor="days">Rent durationInDays (days)</Label>
-          <Input value={propertyId} onChange={(e) => setPropertyId(e.target.value)}
-            id="id" type="number" placeholder="Enter id eg. 1" />
-
-          <Label htmlFor="days">Rent durationInDays (days)</Label>
-          <Input value={durationInDays} onChange={(e) => setDurationInDays(e.target.value)}
-            id="days" type="number" placeholder="30 days" />
-
-          <Button onClick={handleSignRent}
-            type="submit" className="w-full">Sign Rent
-          </Button>
-  </div>
-      </div>
-      <div className="p-2 absolute left-20 bottom-20">
+          <div className="pt-2 text-center">
           <Link to="/landlord-dashboard"
-                  className="font-bold flex items-center gap-1" >
-                  <MdArrowBack size={20} />
-                  <span>back</span>
+            className="text-blue-400 hover:underline font-medium flex items-center justify-center gap-1">
+            <MdArrowBack size={18} />
+            <span>Back to Dashboard</span>
             </Link>
           </div>
-
+     </div>
+    </div>
     </div>
   )
 }
+
+
+  {/* Rental receipt signature Card */}
+//   <div className="grid w-full max-w-sm items-center gap-2 p-4 border rounded-lg shadow">
+//   <h3 className="text-center font-bold text-amber-400">Sign Rent</h3>
+//     <Label htmlFor="days">Rent durationInDays (days)</Label>
+//     <Input value={propertyId} onChange={(e) => setPropertyId(e.target.value)}
+//       id="id" type="number" placeholder="Enter id eg. 1" />
+
+//     <Label htmlFor="days">Rent durationInDays (days)</Label>
+//     <Input value={durationInDays} onChange={(e) => setDurationInDays(e.target.value)}
+//       id="days" type="number" placeholder="30 days" />
+
+//     <Button onClick={handleSignRent}
+//       type="submit" className="w-full">Sign Rent
+//     </Button>
+
+//     <div className="pt-2 text-center">
+//           <Link to="/landlord-dashboard"
+//             className="text-blue-400 hover:underline font-medium flex items-center justify-center gap-1">
+//             <MdArrowBack size={18} />
+//             <span>Back to Dashboard</span>
+//           </Link>
+//         </div>
+// </div>

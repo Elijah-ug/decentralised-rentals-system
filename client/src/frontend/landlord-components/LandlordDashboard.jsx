@@ -73,25 +73,27 @@ export default function LandlordDashboard() {
          <Withdraw />
         </div>
       </div>
-      <div className="flex flex-col gap-4">
+      <div className=" mt-12">
+        <h2 className="text-center mb-4">Quick links</h2>
+      <div className="flex gap-4 justify-center ">
        <Link to="/forms"
-            className="font-bold text-amber-400 flex items-center gap-1" >
+            className="text-blue-400 hover:underline font-medium flex items-center justify-center gap-1" >
             <span>Registere Property</span>
             <FaRegRegistered className="text-white" />
       </Link>
-      <Link to="/forms"
-            className="font-bold text-amber-400 flex items-center gap-1" >
+      <Link to="/sign"
+            className="text-blue-400 hover:underline font-medium flex items-center justify-center gap-1" >
             <span>Sign Receipt</span>
             <FaRegRegistered className="text-white" />
         </Link>
+
+        <Link to="/landlord-properties"
+            className="text-blue-400 hover:underline font-medium flex items-center justify-center gap-1" >
+          <span>Your properties</span>
+          <FaRegRegistered className="text-white" />
+          </Link>
       </div>
-      <div className="p-2 absolute right-20 bottom-4">
-                <Link to="/landlord-properties"
-                        className="font-bold flex items-center gap-1" >
-                        <MdArrowBack size={20} />
-                        <span>Your properties</span>
-                  </Link>
-                </div>
+      </div>
 
     </div>
   )

@@ -15,6 +15,7 @@ import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { autoConnectWallet } from "./auth/autoConnectWalletThunk";
 import Footer from "./frontend/public/Footer";
+import SignReceipt from "./frontend/landlord-components/SignRental";
 export default function App() {
   const dispatch = useDispatch()
   useEffect(() => {
@@ -35,7 +36,8 @@ export default function App() {
           <Route path="withdraw" element={<Withdraw/> } />
         </Route>
         <Route path="register" element={<Registeration />} />
-        <Route path="forms" element={<PropertiesForm />} />
+          <Route path="forms" element={<PropertiesForm />} />
+          <Route path="sign" element={<SignReceipt />} />
         <Route path="trending-properties" element={<TrendingProperties />} />
         <Route path="landlord-properties" element={<LandlordProperties/>} />
       </Routes>
