@@ -44,8 +44,8 @@ export const TrendingProperties = () => {
                 <span>{property?.landlord?.slice(0, 6)}...{property?.landlord?.slice(-4)}</span>
               </p>
 
-              <p className="flex gap-2"><strong>Location:</strong> <span>{property?.name}</span></p>
               <p className="flex gap-2"><strong>Location:</strong> <span>{property?.location}</span></p>
+              <p className="flex gap-2"><strong>Property:</strong> <span>{property?.name}</span></p>
             <p className="flex gap-2"><strong>Rent:</strong> <span>{property?.rentAmount} ETH</span> </p>
             <div className="flex gap-2">
               {/* <strong>Status:</strong>{" "}
