@@ -74,7 +74,7 @@ export const LandlordProperties = () => {
                 </p>)
               }
               <div>
-              <Link to="/forms"
+              <Link to="/sign"
                   className="font-bold  text-green-400 underline right-1/10 top-1/2" >
                   Sign the receipt
             </Link>
@@ -87,7 +87,7 @@ export const LandlordProperties = () => {
                 className="w-1/2 bg-gray-600 text-lg flex items-center justify-center ">
                 No receipt yet</p>)
                   }
-                  
+
       </div>
           ))): <h3 className="text-xl">You have no properties yet</h3> }
 

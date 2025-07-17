@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { fetchTenantProfile } from '@/features/tenant/profile/tenantProfileThunk'
 import { autoConnectWallet } from '@/auth/autoConnectWalletThunk'
 import { fetchReturnAllProperties } from '@/features/public/view/propertyThunk'
+import { fetchReceiptThunk } from '@/features/public/receipts/receiptThunk'
 import Receipts from '../public/Receipts'
 
 export default function TenantDashboard() {
@@ -13,15 +14,17 @@ export default function TenantDashboard() {
   const { tenantProf } = useSelector((state) => state.tenant);
   const { address } = useSelector((state) => state.wallet);
   const { properties } = useSelector((state) => state.allProperties);
+   const { userReceipt } = useSelector((state) => state.receipt);
 
   useEffect(() => {
-    // dispatch(autoConnectWallet());
+    dispatch(fetchReceiptThunk());
     dispatch(fetchTenantProfile());
     dispatch(fetchReturnAllProperties());
   }, [])
   const isBidder = properties.some(
     (property) => property?.requestedBy?.toLowerCase() == address?.toLowerCase());
-  console.log("isBidder: ", isBidder);
+  const found = userReceipt?.tenant?.toLowerCase() === address?.toLowerCase()
+  console.log("userReceiptuserReceipt: ", userReceipt);
   console.log(tenantProf)
 
   return (
@@ -49,10 +52,8 @@ export default function TenantDashboard() {
             </div>
           </div>
 
-
-          {/* Rental details here */}
           <div>
-            {isBidder && (<Receipts/>)}
+            {found && (<Receipts />)}
           </div>
 
         </div>

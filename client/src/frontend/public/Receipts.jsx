@@ -1,6 +1,7 @@
 import { autoConnectWallet } from '@/auth/autoConnectWalletThunk';
 import { fetchReceiptThunk } from '@/features/public/receipts/receiptThunk';
 import { fetchReturnAllProperties } from '@/features/public/view/propertyThunk';
+import { fetchTenantProfile } from '@/features/tenant/profile/tenantProfileThunk';
 import React, { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -13,16 +14,20 @@ export default function Receipts() {
     useEffect(() => {
       dispatch(fetchReceiptThunk());
       dispatch(fetchReturnAllProperties());
+      dispatch(fetchTenantProfile())
     }, [])
     console.log("receiptuserReceipt: ", properties);
-  console.log("receiptuserReceipt: ", userReceipt);
+
   // const propId =
-  const isBidder = properties?.filter((property) => property.requestedBy.toLowerCase() === address.toLowerCase())
- const price = isBidder.map((pr) => pr.rentAmount)
+  const isBidder = properties?.filter(
+    (property) => property.requestedBy.toLowerCase() === address.toLowerCase() ||
+    property.landlord.toLowerCase() === address.toLowerCase())
+  const price = isBidder.map((pr) => pr.rentAmount)
+  console.log("userReceipt.isSigned: ", price);
 
   return (
       <div>
-      {userReceipt.isSigned &&(
+      {userReceipt?.isSigned &&(
         <div className="flex flex-col p-2 rounded">
                   <h4 className="text-center text-amber-500 font-bold">RECEIPT</h4>
                 {/* Landlord */}

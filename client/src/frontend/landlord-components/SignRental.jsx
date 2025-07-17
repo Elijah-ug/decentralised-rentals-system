@@ -37,7 +37,7 @@ export default function SignReceipt() {
 
         <div className="space-y-2">
           <Label htmlFor="id" className="text-sm font-medium ">
-            Hostel ID
+            Property ID
           </Label>
           <Input id="id" type="number" placeholder="Enter Hostel ID e.g. 1" value={propertyId}
             onChange={(e) => setPropertyId(e.target.value)}
