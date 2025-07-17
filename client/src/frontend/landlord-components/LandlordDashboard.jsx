@@ -22,8 +22,10 @@ export default function LandlordDashboard() {
     dispatch(fetchReturnAllProperties())
     console.log(profile)
   }, [address])
-  const isRequested = properties.some((property) => property.tenantRequest && !property.isOccupied );
-  console.log(isRequested)
+  const isRequested = properties.some((property) => property.tenantRequest && !property.isOccupied);
+  const totalProperties = properties.filter((prop) => prop?.landlord?.toLowerCase() === address?.toLowerCase())
+
+  console.log("totalProperties: ", totalProperties)
   return (
     <div className="mx-10 my-4 relative">
       <h3 className="text-lg font-bold  text-center mb-6">Registered Landlord's Dashboard</h3>
@@ -64,7 +66,7 @@ export default function LandlordDashboard() {
           {/* Num of properties */}
           <div >
             <span className="text-violet-400 pr-2">Number of Properties:</span>
-            <span className="text-lg font-bold">{}</span>
+            <span className="text-lg font-bold">{totalProperties.length}</span>
           </div>
           {isRequested && (<p className="mt-5 text-green-400">NOTE: You have a new request</p>)}
         </div>
